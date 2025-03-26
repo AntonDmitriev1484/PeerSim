@@ -1,0 +1,61 @@
+
+# Node state:
+# - local load
+# - quota load, how much we are allowed to transfer each cycle
+#        models the upper bound for how much we can realistically transfer (in total to N other nodes) in one time unit
+
+# Protocol:
+# - each node contacts its most "distant" (by load diff) neighbor, and decides to push or pull load
+
+# Topology:
+# - LB protocol doesn't care about topology management, so it focuses on other protocols to give it nodes to contact, e.g. IdleProtocol / Newscast
+
+# Control:
+# - quota must get restored on each cycle
+
+# Please note that the initializers provided in the example package are ”light”, demo versions;
+# the developer is encouraged to check out the peersim.vector.* package initializers.
+
+
+random.seed 1234567890
+
+simulation.cycles 200
+
+control.shf peersim.cdsim.Shuffle
+
+network.size 500
+
+
+protocol.lb example.loadbalance.BasicBalance
+protocol.lb.quota 100
+# So we give the LB a quota of 100 units of work to exchange each cycle
+
+protocol.lnk example.newscast.SimpleNewscast
+protocol.lnk.cache 20
+protocol.lb.linkable lnk
+# We assign its overlay network to get handled by a newscast link component
+
+init.wk peersim.dynamics.WireKOut
+init.wk.protocol lnk
+init.wk.k 20
+# Randomly initialize the parameters of our newscast component
+
+init.ldbasic peersim.vector.LinearDistribution
+init.ldbasic.protocol lb
+init.ldbasic.max 100
+init.ldbasic.min 1
+# We initialize each LB component on a node with a random value from 1 to 100
+# this represents its load
+
+# .. Don't quite understand the two arguments here?
+include.init wk ldbasic
+
+control.lbo example.loadbalance.LBObserver
+control.lbo.protocol lb
+control.lbo.show_values
+
+control.rq example.loadbalance.ResetQuota
+control.rq.protocol lb
+
+control.qo example.loadbalance.QuotaObserver
+control.qo.protocol lb

@@ -1,0 +1,58 @@
+# PEERSIM EXAMPLE 1
+
+random.seed 1234567890
+simulation.cycles 30
+
+control.shf Shuffle
+
+network.size 50000
+ 
+protocol.lnk IdleProtocol
+# A CDProtocol, by default, runs once every cycle
+# Create a protocol 'lnk'
+# Instantiate it with IdleProtocol - this does nothing but store links to other nodes
+# good for creating a static set of links to other devices
+
+protocol.avg example.aggregation.AverageFunction
+# AverageFunction is another CDProtocol,
+# Our node stores a value, each cycle, we get the value stored by AverageFunction at some other node
+# and average the two together
+protocol.avg.linkable lnk
+# the node we get our other value from, is dictated by the idle protocol
+# so idle protocol determines our nodes static topology first, then we communicate P2P, and exchange values based on that
+
+ # Now that we've set up all of our components, we need to give them initial values
+
+
+init.rnd WireKOut
+init.rnd.protocol lnk
+init.rnd.k 20
+
+# Initialize our IdleProtocol component by : randomly wiring each node to 20 other nodes that have IdleProtocol
+
+init.peak example.aggregation.PeakDistributionInitializer
+init.peak.value 10000
+init.peak.protocol avg
+
+# Initialize our AverageProtocol component by :
+# 'peak' sets one node to have a value of 10000 in its AverageProtocol
+# So this protocol gets initialized with a 'peak distribution'
+# PeakDistributionInitializer is the custom control component that you have to implement to do this
+
+init.lin LinearDistribution
+init.lin.protocol avg
+init.lin.max 100
+init.lin.min 1
+
+# Initialize our AverageProtocol component by :
+# linearly increasing values from 1 to 100? - but don't we have 50k nodes
+# random from uniform between 1 and 100?
+
+# you can change this to select the peak initializer instead
+include.init rnd lin
+
+control.avgo example.aggregation.AverageObserver
+control.avgo.protocol avg
+# Names an 'avgo' component that's an AverageObserver class
+# avgo can be expected to observe an AvgObserver, i.e. in the code in our controller execute() function
+# we can expect to receive an AverageFunction object, that holds a single value, then print that single value
